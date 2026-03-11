@@ -2,7 +2,11 @@ const initApp = () => {
   const app = document.querySelector('#fire-app');
   if (!app) return;
 
-  // 1. 渲染初始結構
+  // 1. [新增] 從 sessionStorage 讀取舊資料，如果沒有就用預設值
+  const savedExpense = sessionStorage.getItem('fire_expense') || '50000';
+  const savedSavings = sessionStorage.getItem('fire_savings') || '1200000';
+
+  // 2. 渲染結構（將 value 替換成讀取到的變數）
   app.innerHTML = `
     <div class="w-full max-w-4xl mx-auto bg-white border border-slate-100 rounded-[3rem] shadow-2xl overflow-hidden">
       <div class="flex flex-col md:flex-row">
@@ -21,12 +25,12 @@ const initApp = () => {
               <div class="space-y-6">
                   <div>
                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-3 ml-1">預期月支出 (TWD)</label>
-                      <input type="number" id="expenseInput" value="50000" 
+                      <input type="number" id="expenseInput" value="${savedExpense}" 
                              class="w-full bg-white border border-slate-200 p-5 rounded-2xl text-xl font-bold outline-none focus:border-orange-500 transition-all">
                   </div>
                   <div>
                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-3 ml-1">目前總存款 (TWD)</label>
-                      <input type="number" id="savingsInput" value="1200000" 
+                      <input type="number" id="savingsInput" value="${savedSavings}" 
                              class="w-full bg-white border border-slate-200 p-5 rounded-2xl text-xl font-bold outline-none focus:border-orange-500 transition-all">
                   </div>
               </div>
@@ -46,11 +50,14 @@ const updateUI = () => {
   const s = Number(document.querySelector('#savingsInput').value) || 0;
   const e = Number(document.querySelector('#expenseInput').value) || 0;
 
+  // 3. [新增] 每次更新數據時，同步存入 sessionStorage
+  sessionStorage.setItem('fire_savings', s);
+  sessionStorage.setItem('fire_expense', e);
+
   const fireGoal = e * 12 * 25;
   const rawPercent = fireGoal > 0 ? (s / fireGoal) * 100 : 0;
   const displayPercent = Math.min(rawPercent, 100).toFixed(1);
 
-  // 精準抓取零件並修改
   document.querySelector('#percentNumber').textContent = displayPercent;
   document.querySelector('#goalText').textContent = `目標金額：$ ${(fireGoal / 10000).toLocaleString()} 萬`;
   document.querySelector('#progressBar').style.width = `${displayPercent}%`;
