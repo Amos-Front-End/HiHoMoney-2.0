@@ -2,11 +2,9 @@ const initApp = () => {
   const app = document.querySelector('#fire-app');
   if (!app) return;
 
-  // 1. [新增] 從 sessionStorage 讀取舊資料，如果沒有就用預設值
   const savedExpense = sessionStorage.getItem('fire_expense') || '50000';
   const savedSavings = sessionStorage.getItem('fire_savings') || '1200000';
 
-  // 2. 渲染結構（將 value 替換成讀取到的變數）
   app.innerHTML = `
     <div class="w-full max-w-4xl mx-auto bg-white border border-slate-100 rounded-[3rem] shadow-2xl overflow-hidden">
       <div class="flex flex-col md:flex-row">
@@ -37,6 +35,15 @@ const initApp = () => {
               <div id="statusTag" class="text-center py-3 rounded-xl bg-slate-200 text-slate-500 font-bold text-sm transition-colors">
                   輸入數據開始試算
               </div>
+              
+              <div class="pt-4 border-t border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase">近期試算劇本</span>
+                  <button id="saveBtn" class="text-[10px] bg-orange-500 text-white px-2 py-1 rounded-md hover:bg-orange-600 transition-all">儲存目前結果</button>
+                </div>
+                <div id="historyList" class="flex flex-wrap gap-2">
+                  </div>
+              </div>
           </div>
       </div>
     </div>
@@ -44,13 +51,13 @@ const initApp = () => {
 
   setupEventListeners();
   updateUI();
+  renderHistory(); // 初始渲染一次歷史紀錄
 };
 
 const updateUI = () => {
   const s = Number(document.querySelector('#savingsInput').value) || 0;
   const e = Number(document.querySelector('#expenseInput').value) || 0;
 
-  // 3. [新增] 每次更新數據時，同步存入 sessionStorage
   sessionStorage.setItem('fire_savings', s);
   sessionStorage.setItem('fire_expense', e);
 
@@ -72,10 +79,58 @@ const updateUI = () => {
   }
 };
 
+// --- 【資料處理核心區】 ---
+
+const saveHistory = () => {
+  const s = document.querySelector('#savingsInput').value;
+  const e = document.querySelector('#expenseInput').value;
+  const p = document.querySelector('#percentNumber').textContent;
+
+  // 1. 讀取並轉回陣列 (JSON.parse)
+  let history = JSON.parse(sessionStorage.getItem('fire_history')) || [];
+
+  // 2. 準備新物件
+  const newRecord = { s, e, p, id: Date.now() };
+
+  // 3. 檢查是否重複（避免存一堆一樣的）
+  if (history.length > 0 && history[0].s === s && history[0].e === e) return;
+
+  // 4. 新增到最前面並限制 4 筆
+  history.unshift(newRecord);
+  history = history.slice(0, 4);
+
+  // 5. 存回字串 (JSON.stringify)
+  sessionStorage.setItem('fire_history', JSON.stringify(history));
+  renderHistory();
+};
+
+const renderHistory = () => {
+  const history = JSON.parse(sessionStorage.getItem('fire_history')) || [];
+  const listEl = document.querySelector('#historyList');
+  
+  // 6. 使用 map 變身魔杖：陣列 -> HTML 字串
+  listEl.innerHTML = history.map(item => `
+    <button onclick="loadHistory(${item.s}, ${item.e})" 
+            class="text-[10px] bg-white border border-slate-200 px-3 py-1.5 rounded-full text-slate-500 hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm">
+      💸 ${Number(item.e)/1000}k / 💰 ${Number(item.s)/10000}萬
+    </button>
+  `).join('');
+};
+
+// 讓標籤點了可以跳回去
+window.loadHistory = (s, e) => {
+  document.querySelector('#savingsInput').value = s;
+  document.querySelector('#expenseInput').value = e;
+  updateUI();
+};
+
 const setupEventListeners = () => {
   ['#savingsInput', '#expenseInput'].forEach(id => {
     document.querySelector(id).addEventListener('input', updateUI);
   });
+  
+  // 綁定儲存按鈕
+  document.querySelector('#saveBtn').addEventListener('click', saveHistory);
 };
 
 initApp();
