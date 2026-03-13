@@ -134,3 +134,53 @@ const setupEventListeners = () => {
 };
 
 initApp();
+
+/**
+ * HiHoMoney 儀表板更新邏輯
+ * 功能：從 API 抓取最新匯率並填入對應的 HTML 卡片
+ */
+function updateExchangeDashboard() {
+    const apiURL = 'https://open.er-api.com/v6/latest/TWD';
+
+    console.log("📡 正在同步全球匯率數據...");
+
+    fetch(apiURL)
+        .then(response => {
+            if (!response.ok) throw new Error('匯率 API 連線失敗');
+            return response.json();
+        })
+        .then(data => {
+            const rates = data.rates;
+
+            // 輔助工具：換算成 1 外幣等於多少台幣
+            const formatToTWD = (rate, fixedDigits = 2) => {
+                return (1 / rate).toFixed(fixedDigits);
+            };
+
+            // 精準填入各個貨幣數據
+            const usdVal = document.getElementById('rate-usd');
+            const jpyVal = document.getElementById('rate-jpy');
+            const eurVal = document.getElementById('rate-eur');
+            const cnyVal = document.getElementById('rate-cny');
+
+            if (usdVal) usdVal.innerText = formatToTWD(rates.USD);
+            if (jpyVal) jpyVal.innerText = formatToTWD(rates.JPY, 3); // 日幣顯示到三位數較常見
+            if (eurVal) eurVal.innerText = formatToTWD(rates.EUR);
+            if (cnyVal) cnyVal.innerText = formatToTWD(rates.CNY);
+
+            console.log("✅ 儀表板數據同步完成");
+        })
+        .catch(error => {
+            console.error("❌ 儀表板更新發生錯誤:", error);
+            // 錯誤處理：若 API 失敗，顯示警告文字
+            const ids = ['usd', 'jpy', 'eur', 'cny'];
+            ids.forEach(id => {
+                const el = document.getElementById(`rate-${id}`);
+                if (el) el.innerText = "Error";
+            });
+        });
+}
+
+// 網頁啟動時自動執行一次
+// 如果你有使用 DOMContentLoaded，也可以放進去
+document.addEventListener('DOMContentLoaded', updateExchangeDashboard);
