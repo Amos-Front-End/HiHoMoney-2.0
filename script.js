@@ -139,47 +139,49 @@ initApp();
  * HiHoMoney 儀表板更新邏輯
  * 功能：從 API 抓取最新匯率並填入對應的 HTML 卡片
  */
-function updateExchangeDashboard() {
-    const apiURL = 'https://open.er-api.com/v6/latest/TWD';
 
-    console.log("📡 正在同步全球匯率數據...");
+// --- 基礎設定與工具函式 ---
+const apiURL = 'https://open.er-api.com/v6/latest/TWD';
 
-    fetch(apiURL)
-        .then(response => {
-            if (!response.ok) throw new Error('匯率 API 連線失敗');
-            return response.json();
-        })
-        .then(data => {
-            const rates = data.rates;
+// 使用箭頭函式縮骨功：一行搞定匯率換算邏輯
+const toTWD = (rate, fixed = 2) => (1 / rate).toFixed(fixed);
 
-            // 輔助工具：換算成 1 外幣等於多少台幣
-            const formatToTWD = (rate, fixedDigits = 2) => {
-                return (1 / rate).toFixed(fixedDigits);
-            };
+// --- 核心邏輯：非同步抓取與渲染 ---
+const updateExchangeDashboard = async () => {
+    // 取得畫面上顯示狀態的元件（選擇性，可用於顯示讀取中）
+    console.log("🚀 開始抓取即時匯率...");
 
-            // 精準填入各個貨幣數據
-            const usdVal = document.getElementById('rate-usd');
-            const jpyVal = document.getElementById('rate-jpy');
-            const eurVal = document.getElementById('rate-eur');
-            const cnyVal = document.getElementById('rate-cny');
+    try {
+        // 1. 發出請求並等待回應
+        const response = await fetch(apiURL);
+        
+        // 檢查回應狀態（防禦性編程）
+        if (!response.ok) throw new Error("網路請求失敗");
 
-            if (usdVal) usdVal.innerText = formatToTWD(rates.USD);
-            if (jpyVal) jpyVal.innerText = formatToTWD(rates.JPY, 3); // 日幣顯示到三位數較常見
-            if (eurVal) eurVal.innerText = formatToTWD(rates.EUR);
-            if (cnyVal) cnyVal.innerText = formatToTWD(rates.CNY);
+        // 2. 等待解析 JSON
+        const data = await response.json();
+        const r = data.rates; 
 
-            console.log("✅ 儀表板數據同步完成");
-        })
-        .catch(error => {
-            console.error("❌ 儀表板更新發生錯誤:", error);
-            // 錯誤處理：若 API 失敗，顯示警告文字
-            const ids = ['usd', 'jpy', 'eur', 'cny'];
-            ids.forEach(id => {
-                const el = document.getElementById(`rate-${id}`);
-                if (el) el.innerText = "Error";
-            });
+        // 3. 渲染畫面：使用 textContent 確保效能與安全
+        // 這裡展現了從資料到畫面的直接映射
+        document.getElementById('rate-usd').textContent = toTWD(r.USD);
+        document.getElementById('rate-jpy').textContent = toTWD(r.JPY, 3);
+        document.getElementById('rate-eur').textContent = toTWD(r.EUR);
+        document.getElementById('rate-cny').textContent = toTWD(r.CNY);
+
+        console.log("✅ 所有數據已同步至最新狀態");
+
+    } catch (error) {
+        // 4. 保險絲：萬一出事，執行錯誤處理 UI
+        console.error("❌ 發生慘劇：", error);
+        
+        const currencyIds = ['usd', 'jpy', 'eur', 'cny'];
+        currencyIds.forEach(id => {
+            const el = document.getElementById(`rate-${id}`);
+            if (el) el.textContent = "Error";
         });
-}
+    }
+};
 
 // 網頁啟動時自動執行一次
 // 如果你有使用 DOMContentLoaded，也可以放進去
