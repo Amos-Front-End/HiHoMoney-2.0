@@ -148,33 +148,29 @@ const toTWD = (rate, fixed = 2) => (1 / rate).toFixed(fixed);
 
 // --- 核心邏輯：非同步抓取與渲染 ---
 const updateExchangeDashboard = async () => {
-    // 取得畫面上顯示狀態的元件（選擇性，可用於顯示讀取中）
     console.log("🚀 開始抓取即時匯率...");
 
     try {
-        // 1. 發出請求並等待回應
         const response = await fetch(apiURL);
-        
-        // 檢查回應狀態（防禦性編程）
         if (!response.ok) throw new Error("網路請求失敗");
 
-        // 2. 等待解析 JSON
         const data = await response.json();
-        const r = data.rates; 
+        
+        // ✅ 重點 1：用「巢狀解構」讓拿資料變超快
+        const { rates: { USD, JPY, EUR, CNY } } = data; 
 
-        // 3. 渲染畫面：使用 textContent 確保效能與安全
-        // 這裡展現了從資料到畫面的直接映射
-        document.getElementById('rate-usd').textContent = toTWD(r.USD);
-        document.getElementById('rate-jpy').textContent = toTWD(r.JPY, 3);
-        document.getElementById('rate-eur').textContent = toTWD(r.EUR);
-        document.getElementById('rate-cny').textContent = toTWD(r.CNY);
+        // ✅ 重點 2：渲染畫面
+        document.getElementById('rate-usd').textContent = toTWD(USD);
+        document.getElementById('rate-jpy').textContent = toTWD(JPY, 3);
+        document.getElementById('rate-eur').textContent = toTWD(EUR);
+        document.getElementById('rate-cny').textContent = toTWD(CNY);
 
         console.log("✅ 所有數據已同步至最新狀態");
 
     } catch (error) {
-        // 4. 保險絲：萬一出事，執行錯誤處理 UI
         console.error("❌ 發生慘劇：", error);
         
+        // 萬一出事，執行錯誤處理 UI
         const currencyIds = ['usd', 'jpy', 'eur', 'cny'];
         currencyIds.forEach(id => {
             const el = document.getElementById(`rate-${id}`);
