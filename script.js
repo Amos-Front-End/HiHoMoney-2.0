@@ -179,6 +179,51 @@ const updateExchangeDashboard = async () => {
     }
 };
 
-// 網頁啟動時自動執行一次
-// 如果你有使用 DOMContentLoaded，也可以放進去
-document.addEventListener('DOMContentLoaded', updateExchangeDashboard);
+/**
+ * 初始化匯率卡片點擊事件
+ */
+const initRateEvents = () => {
+    const rateContainer = document.getElementById('rate-container');
+    if (!rateContainer) return;
+
+    rateContainer.addEventListener('click', (e) => {
+        // 1. 準確定位卡片
+        const card = e.target.closest('[data-code]');
+        if (!card) return;
+
+        // 2. 清除所有卡片的選取狀態 (回歸平淡)
+        document.querySelectorAll('#rate-container > div').forEach(el => {
+            el.classList.remove(
+                'ring-2', 'ring-emerald-500', 'ring-offset-2', 
+                'shadow-md', 'scale-[1.02]', 'z-10', 'bg-slate-50'
+            );
+        });
+
+        // 3. 賦予選中卡片「低調的高級感」
+        // ring-2: 極細線 | ring-offset-2: 靈魂留白 | scale-[1.02]: 輕微放大
+        card.classList.add(
+            'ring-2', 
+            'ring-emerald-500', 
+            'ring-offset-2', 
+            'shadow-md', 
+            'scale-[1.02]', 
+            'z-10',
+            'bg-slate-50' // 稍微變色，暗示已被選中
+        );
+
+        // 4. Debug 專用 Log (讓你知道邏輯有通)
+        const code = card.dataset.code;
+        console.log(`[Interaction] 🚀 已選取幣別: ${code}`);
+    });
+};
+
+// 當網頁準備好時，執行這張啟動清單
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 任務 1：去 API 抓最新匯率並填入數字
+    updateExchangeDashboard();
+    
+    // 任務 2：啟動卡片點擊的「事件委任」總機
+    initRateEvents();
+
+});
